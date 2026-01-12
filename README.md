@@ -1,6 +1,8 @@
 # Task Manager Frontend (React + Vite)
 
 Frontend do sistema **Task Manager**, consumindo uma **API REST real** (Spring Boot) via HTTP.
+## Backend (API)
+- Repository: https://github.com/GustavoMPrado/task-manager-api
 
 ## Stack
 - React + Vite
@@ -18,6 +20,11 @@ Frontend do sistema **Task Manager**, consumindo uma **API REST real** (Spring B
 - Excluir tarefa (DELETE) com confirmação
 - Loading e mensagens de erro
 
+## Screenshots
+![Home](screenshots/home.png)
+![Edit](screenshots/edit.png)
+
+
 ## Como rodar
 ### Pré-requisitos
 - Node.js (LTS)
@@ -27,3 +34,6 @@ Frontend do sistema **Task Manager**, consumindo uma **API REST real** (Spring B
 ```bash
 npm install
 npm run dev
+
+
+
