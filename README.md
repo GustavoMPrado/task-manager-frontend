@@ -71,10 +71,16 @@ To stop:
 
 ---
 
-## Screenshots
+## 📸 Screenshots
 
-- `screenshots/home.png`
-- `screenshots/edit.png`
+### Home
+![Home](./screenshots/home.png)
+
+### Filters / Search
+![Filters](./screenshots/filters.png)
+
+### Edit / Patch
+![Edit](./screenshots/edit.png)
 
 ---
 
