@@ -1,29 +1,20 @@
 # Task Manager — Full Stack (Java + Spring Boot + React)
 
-## Where to paste
-Replace the entire content of:
-`C:\workspace\task-manager-frontend\README.md`
-with this file.
+A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, **pagination**, **filters/search**, and a clean **UX**.
+
+- **Backend:** Java 21 · Spring Boot · PostgreSQL · Flyway  
+- **Frontend:** React · Vite · TypeScript · Tailwind CSS  
+- **Local run:** Docker Compose (one command) **or** Windows scripts (two clicks)
 
 ---
 
-## Overview
+## Features
 
-A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, **pagination**, **filters**, and a polished **UX**.
-
-- **Backend:** Java 21 • Spring Boot • PostgreSQL • Flyway  
-- **Frontend:** React • Vite • TypeScript • Tailwind  
-- **Local run:** Docker • Docker Compose (one command / two clicks)
-
----
-
-## Highlights
-
-- **Full CRUD:** POST / GET (paginated) / GET by id / PUT / PATCH / DELETE  
-- **UI:** pagination, search, filters (status/priority), sorting, page size  
-- **Inline updates:** PATCH status/priority directly from the list  
-- **UX:** busy overlay, toast feedback, friendly error messaging  
-- **Dev-friendly local run:** single Compose file to run everything locally  
+- **Full CRUD:** create, list (paginated), get by id, update (PUT), partial update (PATCH), delete  
+- **List UI:** pagination, search (`q`), filters (status/priority), sorting, page size  
+- **Inline updates:** PATCH **status** and **priority** directly from the list  
+- **UX:** loading overlay, toast feedback, friendly error messages  
+- **Dev-friendly local run:** run everything locally via Docker Compose or `.bat` scripts
 
 ---
 
@@ -31,32 +22,38 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 
 ### Option 1 — One command (Docker Compose)
 
+From the folder where `docker-compose.yml` is located:
+
 ```bash
-cd C:\workspace
 docker compose up --build
-Open: http://localhost:5173
+Open:
+
+Frontend: http://localhost:5173
+
+API: http://localhost:8081
 
 To stop:
 
 docker compose down
 Option 2 — Two clicks (Windows)
-In C:\workspace:
+In the folder where the scripts are located:
 
 Double click: start-task-manager.bat
+
 Open: http://localhost:5173
 
 To stop:
 
 Double click: stop-task-manager.bat
 
-What you can do
+What you can do (UI)
 Create tasks with title, description, status, priority, and due date
 
 Browse tasks with pagination
 
-Search by text (q) and filter by status/priority
+Search by text using q and filter by status/priority
 
-Sort by id, title, dueDate, and change page size
+Sort by fields (e.g., id, title, dueDate) and change page size
 
 Edit tasks (PUT) using form edit mode
 
@@ -71,33 +68,32 @@ task-manager-frontend/ — React app (TypeScript + Tailwind)
 
 docker-compose.yml — runs Postgres + API + Frontend
 
-screenshots/ — UI images for quick review
+screenshots/ — UI images (keep this section aligned with real files)
 
 Screenshots
-Add files to screenshots/:
+This repository currently has 2 screenshots in screenshots/.
+Replace the placeholders below with the exact file names that exist in your repo.
 
-01-home.png
+screenshots/<IMAGE_1>
 
-02-filters.png
-
-03-edit.png
-
-Example:
-
-
-
+screenshots/<IMAGE_2>
 
 Development (without Docker)
 Backend
-Run the API on: http://localhost:8081
+Run the API at:
+
+http://localhost:8081
 
 Frontend
-cd task-manager-frontend
+From task-manager-frontend/:
+
 npm install
 npm run dev
-Open: http://localhost:5173
+Open:
 
-Note: the frontend calls /api/... and Vite proxies to http://localhost:8081.
+http://localhost:5173
+
+Note: the frontend calls /api/... and Vite proxies to http://localhost:8081 (removing /api).
 
 Repositories
 Backend: https://github.com/GustavoMPrado/task-manager-api
