@@ -57,7 +57,7 @@ export type TaskPatchPayload = Partial<
 >;
 
 export const api = axios.create({
-  baseURL: "/api",
+  baseURL: import.meta.env.VITE_API_URL || "/api",
 });
 
 function cleanParams<T extends Record<string, unknown>>(params: T): Partial<T> {
@@ -90,11 +90,12 @@ function normalizeTaskResponse(data: unknown): Task {
   return normalizeTask(data as Task);
 }
 
-export async function listTasks(params: ListTasksParams = {}): Promise<PageResponse<Task>> {
+export async function listTasks(
+  params: ListTasksParams = {}
+): Promise<PageResponse<Task>> {
   const res = await api.get("/tasks", { params: cleanParams(params) });
   const normalized = normalizeListTasksResponse(res.data);
   return { ...normalized, content: normalized.content.map(normalizeTask) };
-
 }
 
 export async function createTask(payload: TaskCreatePayload): Promise<Task> {
@@ -106,12 +107,18 @@ export async function deleteTask(id: number): Promise<void> {
   await api.delete(`/tasks/${id}`);
 }
 
-export async function updateTask(id: number, payload: TaskUpdatePayload): Promise<Task> {
+export async function updateTask(
+  id: number,
+  payload: TaskUpdatePayload
+): Promise<Task> {
   const res = await api.put(`/tasks/${id}`, payload);
   return res.data as Task;
 }
 
-export async function patchTask(id: number, payload: TaskPatchPayload): Promise<Task> {
+export async function patchTask(
+  id: number,
+  payload: TaskPatchPayload
+): Promise<Task> {
   const res = await api.patch(`/tasks/${id}`, payload);
   return res.data as Task;
 }
@@ -120,4 +127,3 @@ export async function getTaskById(id: number): Promise<Task> {
   const res = await api.get(`/tasks/${id}`);
   return res.data as Task;
 }
-
