@@ -1,4 +1,5 @@
 @echo off
-cd /d C:\workspace
+cd /d C:\workspace\springboot-api
 docker compose down
 pause
+
