@@ -56,9 +56,14 @@ export type TaskPatchPayload = Partial<
   Pick<Task, "status" | "priority" | "title" | "description" | "dueDate">
 >;
 
-export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "/api",
-});
+const DEFAULT_PROD_API_URL = "https://task-manager-api-njza.onrender.com";
+const DEFAULT_DEV_API_URL = "/api";
+
+const baseURL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.PROD ? DEFAULT_PROD_API_URL : DEFAULT_DEV_API_URL);
+
+export const api = axios.create({ baseURL });
 
 function cleanParams<T extends Record<string, unknown>>(params: T): Partial<T> {
   const out: Partial<T> = {};
@@ -84,10 +89,6 @@ function normalizeListTasksResponse(data: unknown): PageResponse<Task> {
 
 function normalizeTask(t: Task): Task {
   return { ...t, dueDate: t.dueDate ? t.dueDate.slice(0, 10) : null };
-}
-
-function normalizeTaskResponse(data: unknown): Task {
-  return normalizeTask(data as Task);
 }
 
 export async function listTasks(
@@ -127,3 +128,4 @@ export async function getTaskById(id: number): Promise<Task> {
   const res = await api.get(`/tasks/${id}`);
   return res.data as Task;
 }
+
