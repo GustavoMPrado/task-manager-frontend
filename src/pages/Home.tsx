@@ -1,7 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { createTask, deleteTask, listTasks, patchTask, updateTask } from "../api/taskApi";
-import type { Task, TaskCreatePayload, TaskPriority, TaskStatus, TaskUpdatePayload } from "../api/taskApi";
+import {
+  createTask,
+  deleteTask,
+  getAuthToken,
+  login,
+  patchTask,
+  updateTask,
+  listTasks,
+} from "../api/taskApi";
+import type {
+  Task,
+  TaskCreatePayload,
+  TaskPriority,
+  TaskStatus,
+  TaskUpdatePayload,
+} from "../api/taskApi";
 import TaskForm from "../components/TaskForm";
 import TaskList from "../components/TaskList";
 import Toast from "../components/Toast";
@@ -33,11 +47,22 @@ function getErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+function isHttp401(err: unknown): boolean {
+  return axios.isAxiosError(err) && err.response?.status === 401;
+}
+
 export default function Home() {
+  const [token, setToken] = useState<string | null>(() => getAuthToken());
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  const [loadingList, setLoadingList] = useState(true);
+  const [loadingList, setLoadingList] = useState(false);
   const [error, setError] = useState("");
 
   const [page, setPage] = useState(0);
@@ -54,11 +79,13 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "">("");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "">("");
 
-  const [toast, setToast] = useState<{ open: boolean; message: string; type: ToastType }>({
-    open: false,
-    message: "",
-    type: "success",
-  });
+  const [toast, setToast] = useState<{ open: boolean; message: string; type: ToastType }>(
+    {
+      open: false,
+      message: "",
+      type: "success",
+    }
+  );
 
   const toastTimerRef = useRef<number | null>(null);
 
@@ -75,7 +102,16 @@ export default function Home() {
     setToast((t) => ({ ...t, open: false }));
   }
 
+  function refreshTokenFromStorage() {
+    const t = getAuthToken();
+    setToken(t);
+    return t;
+  }
+
   async function load(customPage = page) {
+    const t = refreshTokenFromStorage();
+    if (!t) return;
+
     try {
       setError("");
       setLoadingList(true);
@@ -99,6 +135,16 @@ export default function Home() {
       const te = Number(data?.page?.totalElements ?? data?.totalElements ?? 0);
       setTotalElements(te);
     } catch (err: unknown) {
+      if (isHttp401(err)) {
+        refreshTokenFromStorage();
+        setTasks([]);
+        setEditingTask(null);
+        setError("");
+        setLoginError("Sessão expirada. Entre novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
       const msg = getErrorMessage(err, "Falha ao buscar tarefas (GET /tasks).");
       setError(msg);
       showToast(msg, "error");
@@ -109,8 +155,10 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const t = refreshTokenFromStorage();
+    if (!t) return;
     load(page);
-  }, [page, size, sort, qApplied, statusFilter, priorityFilter]);
+  }, [token, page, size, sort, qApplied, statusFilter, priorityFilter]);
 
   useEffect(() => {
     return () => {
@@ -118,16 +166,93 @@ export default function Home() {
     };
   }, []);
 
+  async function handleLogin() {
+    try {
+      setLoggingIn(true);
+      setLoginError("");
+      setError("");
+
+      const res = await login({ username: username.trim(), password });
+      if (!res?.token) {
+        setLoginError("Falha no login: token não recebido.");
+        showToast("Falha no login: token não recebido.", "error");
+        return;
+      }
+
+      const t = refreshTokenFromStorage();
+      setPage(0);
+      setQInput("");
+      setQApplied("");
+      setStatusFilter("");
+      setPriorityFilter("");
+      setEditingTask(null);
+      setTasks([]);
+      setTotalPages(0);
+      setTotalElements(0);
+
+      if (t) {
+        await load(0);
+      }
+
+      showToast("Login realizado!");
+    } catch (err: unknown) {
+      if (isHttp401(err)) {
+        setLoginError("Usuário ou senha inválidos.");
+        showToast("Usuário ou senha inválidos.", "error");
+        return;
+      }
+
+      const msg = getErrorMessage(err, "Falha ao fazer login (POST /auth/login).");
+      setLoginError(msg);
+      showToast(msg, "error");
+      console.error(err);
+    } finally {
+      setLoggingIn(false);
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("task_manager_token");
+    setToken(null);
+    setUsername("");
+    setPassword("");
+    setTasks([]);
+    setEditingTask(null);
+    setError("");
+    setLoginError("");
+    setPage(0);
+    setTotalPages(0);
+    setTotalElements(0);
+    setQInput("");
+    setQApplied("");
+    setStatusFilter("");
+    setPriorityFilter("");
+    showToast("Você saiu.");
+  }
+
   async function handleCreate(payload: TaskCreatePayload) {
     try {
+      if (!refreshTokenFromStorage()) return;
+
       setBusy(true);
       setError("");
+
       await createTask(payload);
       setEditingTask(null);
       setPage(0);
       await load(0);
       showToast("Tarefa criada com sucesso!");
     } catch (err: unknown) {
+      if (isHttp401(err)) {
+        refreshTokenFromStorage();
+        setTasks([]);
+        setEditingTask(null);
+        setError("");
+        setLoginError("Sessão expirada. Entre novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
       const msg = getErrorMessage(err, "Falha ao criar tarefa (POST /tasks).");
       setError(msg);
       showToast(msg, "error");
@@ -140,6 +265,8 @@ export default function Home() {
 
   async function handleUpdate(id: number, payload: TaskUpdatePayload) {
     try {
+      if (!refreshTokenFromStorage()) return;
+
       setBusy(true);
       setError("");
       await updateTask(id, payload);
@@ -147,6 +274,16 @@ export default function Home() {
       await load(page);
       showToast("Alterações salvas!");
     } catch (err: unknown) {
+      if (isHttp401(err)) {
+        refreshTokenFromStorage();
+        setTasks([]);
+        setEditingTask(null);
+        setError("");
+        setLoginError("Sessão expirada. Entre novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
       const msg = getErrorMessage(err, "Falha ao atualizar tarefa (PUT /tasks/{id}).");
       setError(msg);
       showToast(msg, "error");
@@ -159,6 +296,8 @@ export default function Home() {
 
   async function handleDelete(id: number) {
     try {
+      if (!refreshTokenFromStorage()) return;
+
       setBusy(true);
       setError("");
       await deleteTask(id);
@@ -176,6 +315,16 @@ export default function Home() {
 
       showToast("Tarefa excluída.");
     } catch (err: unknown) {
+      if (isHttp401(err)) {
+        refreshTokenFromStorage();
+        setTasks([]);
+        setEditingTask(null);
+        setError("");
+        setLoginError("Sessão expirada. Entre novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
       const msg = getErrorMessage(err, "Falha ao excluir (DELETE /tasks/{id}).");
       setError(msg);
       showToast(msg, "error");
@@ -191,6 +340,8 @@ export default function Home() {
     if (!prevTask || prevTask.status === newStatus || busy) return;
 
     try {
+      if (!refreshTokenFromStorage()) return;
+
       setBusy(true);
       setError("");
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: newStatus } : t)));
@@ -198,6 +349,17 @@ export default function Home() {
       showToast("Status atualizado.");
     } catch (err: unknown) {
       setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status: prevTask.status } : t)));
+
+      if (isHttp401(err)) {
+        refreshTokenFromStorage();
+        setTasks([]);
+        setEditingTask(null);
+        setError("");
+        setLoginError("Sessão expirada. Entre novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
       const msg = getErrorMessage(err, "Falha ao atualizar status (PATCH /tasks/{id}).");
       setError(msg);
       showToast(msg, "error");
@@ -213,13 +375,30 @@ export default function Home() {
     if (!prevTask || prevTask.priority === newPriority || busy) return;
 
     try {
+      if (!refreshTokenFromStorage()) return;
+
       setBusy(true);
       setError("");
-      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, priority: newPriority } : t)));
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, priority: newPriority } : t))
+      );
       await patchTask(id, { priority: newPriority });
       showToast("Prioridade atualizada.");
     } catch (err: unknown) {
-      setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, priority: prevTask.priority } : t)));
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, priority: prevTask.priority } : t))
+      );
+
+      if (isHttp401(err)) {
+        refreshTokenFromStorage();
+        setTasks([]);
+        setEditingTask(null);
+        setError("");
+        setLoginError("Sessão expirada. Entre novamente.");
+        showToast("Sessão expirada. Faça login novamente.", "error");
+        return;
+      }
+
       const msg = getErrorMessage(err, "Falha ao atualizar prioridade (PATCH /tasks/{id}).");
       setError(msg);
       showToast(msg, "error");
@@ -295,6 +474,73 @@ export default function Home() {
     return { total, todo, doing, done };
   }, [tasks]);
 
+  const isLoggedIn = !!token;
+
+  if (!isLoggedIn) {
+    return (
+      <div className="mx-auto w-full max-w-5xl p-4 md:p-6">
+        <Toast open={toast.open} message={toast.message} type={toast.type} onClose={closeToast} />
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_18px_60px_rgba(0,0,0,0.22)] backdrop-blur">
+          <h1 className="m-0 text-3xl font-semibold tracking-tight md:text-4xl">
+            Task Manager — Login
+          </h1>
+
+          <p className="mt-2 text-sm opacity-80">
+            Entre para carregar suas tarefas (JWT).
+          </p>
+
+          {loginError && (
+            <div className="mt-3 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm">
+              {loginError}
+            </div>
+          )}
+
+          <div className="mt-4 grid gap-3">
+            <label className="grid gap-1">
+              <span className="text-sm opacity-85">Usuário</span>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm outline-none placeholder:text-white/50"
+                placeholder="username"
+              />
+            </label>
+
+            <label className="grid gap-1">
+              <span className="text-sm opacity-85">Senha</span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleLogin();
+                }}
+                className="w-full rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-sm outline-none placeholder:text-white/50"
+                placeholder="password"
+              />
+            </label>
+
+            <button
+              type="button"
+              onClick={handleLogin}
+              disabled={loggingIn || !username.trim() || !password}
+              className={`mt-2 rounded-xl border border-white/15 px-4 py-2 text-sm ${
+                loggingIn || !username.trim() || !password
+                  ? "cursor-not-allowed opacity-50"
+                  : "bg-white/10 hover:bg-white/15"
+              }`}
+            >
+              {loggingIn ? "Entrando..." : "Entrar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto w-full max-w-5xl p-4 md:p-6">
       <BusyOverlay open={busy || loadingList} label={busy ? "Processando..." : "Carregando..."} />
@@ -305,6 +551,19 @@ export default function Home() {
           <h1 className="m-0 text-4xl font-semibold tracking-tight md:text-5xl">Task Manager</h1>
 
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              disabled={busy || loadingList}
+              className={`rounded-full border border-white/15 px-3 py-2 text-xs ${
+                busy || loadingList
+                  ? "cursor-not-allowed opacity-50"
+                  : "bg-white/10 hover:bg-white/15"
+              }`}
+            >
+              Sair
+            </button>
+
             <span className="inline-flex min-h-[34px] items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs">
               Total (página): <b>{stats.total}</b>
             </span>
@@ -457,6 +716,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 

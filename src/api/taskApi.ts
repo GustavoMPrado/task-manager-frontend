@@ -56,6 +56,15 @@ export type TaskPatchPayload = Partial<
   Pick<Task, "status" | "priority" | "title" | "description" | "dueDate">
 >;
 
+export type LoginPayload = {
+  username: string;
+  password: string;
+};
+
+export type LoginResponse = {
+  token: string;
+};
+
 const DEFAULT_PROD_API_URL = "https://task-manager-api-njza.onrender.com";
 const DEFAULT_DEV_API_URL = "/api";
 
@@ -63,7 +72,41 @@ const baseURL =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.PROD ? DEFAULT_PROD_API_URL : DEFAULT_DEV_API_URL);
 
+const AUTH_TOKEN_KEY = "task_manager_token";
+
 export const api = axios.create({ baseURL });
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function setAuthToken(token: string): void {
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+export function clearAuthToken(): void {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+api.interceptors.request.use((config) => {
+  const token = getAuthToken();
+  if (token) {
+    config.headers = config.headers ?? {};
+    (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    const status = err?.response?.status;
+    if (status === 401) {
+      clearAuthToken();
+    }
+    return Promise.reject(err);
+  }
+);
 
 function cleanParams<T extends Record<string, unknown>>(params: T): Partial<T> {
   const out: Partial<T> = {};
@@ -89,6 +132,13 @@ function normalizeListTasksResponse(data: unknown): PageResponse<Task> {
 
 function normalizeTask(t: Task): Task {
   return { ...t, dueDate: t.dueDate ? t.dueDate.slice(0, 10) : null };
+}
+
+export async function login(payload: LoginPayload): Promise<LoginResponse> {
+  const res = await api.post("/auth/login", payload);
+  const data = res.data as LoginResponse;
+  if (data?.token) setAuthToken(data.token);
+  return data;
 }
 
 export async function listTasks(
@@ -128,4 +178,5 @@ export async function getTaskById(id: number): Promise<Task> {
   const res = await api.get(`/tasks/${id}`);
   return res.data as Task;
 }
+
 
