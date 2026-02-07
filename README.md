@@ -101,13 +101,12 @@ In development, the frontend calls `/api/...` and Vite proxies to `http://localh
 
 ---
 
-## Screenshots
+## Screenshots (V2)
 
-You can add screenshots later in `./screenshots/`. Suggested for V2:
-- Login screen
-- List after login
-- Create task success toast
-- Session expired (redirect to login)
+![V2 Login](./screenshots/10-v2-login.png)
+![V2 List](./screenshots/11-v2-list.png)
+![V2 Create Toast](./screenshots/12-v2-create-toast.png)
+![V2 Session Expired](./screenshots/13-v2-session-expired.png)
 
 ---
 
@@ -122,6 +121,7 @@ You can add screenshots later in `./screenshots/`. Suggested for V2:
 
 Gustavo Marinho Prado Alves  
 GitHub: https://github.com/GustavoMPrado
+
 
 
 
