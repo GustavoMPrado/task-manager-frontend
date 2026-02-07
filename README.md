@@ -1,11 +1,10 @@
-# Task Manager — Full Stack (Java + Spring Boot + React)
+# Task Manager — Full Stack (V2: JWT + Scaling + Observability)
 
-A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, **pagination**, **filters/search**, and a clean **UX**.
+A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, **pagination**, **filters/search**, a clean **UX**, and **security upgrades** with **JWT**.
 
-- **Backend:** Java 21 · Spring Boot · PostgreSQL · Flyway  
+- **Backend:** Java 21 · Spring Boot · PostgreSQL · Flyway · Actuator  
 - **Frontend:** React · Vite · TypeScript · Tailwind CSS  
-- **Production:** Render (API) + GitHub Pages (Frontend)  
-- **Local run:** Docker Compose **or** Windows scripts (two clicks)
+- **Production:** Render (API) + GitHub Pages (Frontend)
 
 ---
 
@@ -14,9 +13,28 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 - **Frontend (GitHub Pages):** https://gustavomprado.github.io/task-manager-frontend/
 - **API (Render):** https://task-manager-api-njza.onrender.com  
   - Health: https://task-manager-api-njza.onrender.com/actuator/health  
-  - Tasks (example): https://task-manager-api-njza.onrender.com/tasks?page=0&size=5&sort=id,desc
+  - Root status: https://task-manager-api-njza.onrender.com/  
+    - Returns: `{"status":"ok","service":"task-manager-api"}`
 
 > **Note:** Render Free may have a **cold start** (~50s) on the first request.
+
+---
+
+## V2 Highlights (Security + Resilience)
+
+### JWT Auth (Frontend + Backend)
+- Login via `POST /auth/login` returns `{ token }`
+- Frontend stores token in `localStorage` key: `task_manager_token`
+- Requests to `/tasks/**` use `Authorization: Bearer <token>`
+- If API returns **401**, the frontend clears token and returns to login (session expired)
+
+### Resilience / Scaling
+- **Login rate limit**: after **5 attempts/minute/IP**, `/auth/login` returns **429**
+- **Pagination cap**: requests with very large `size` are capped (e.g., `size=999` → effective `size=50`)
+- **Flyway migrations**: schema versioned (includes `V2__add_indexes_timestamps.sql`)
+
+### Observability
+- Actuator health: `GET /actuator/health` → `UP`
 
 ---
 
@@ -26,95 +44,70 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 - **List UI:** pagination, search (`q`), filters (status/priority), sorting, page size
 - **Inline updates:** PATCH **status** and **priority** directly from the list
 - **UX:** loading overlay, toast feedback, friendly error messages
-- **Dev-friendly local run:** run locally via Docker Compose or `.bat` scripts
+- **Security UX:** login screen, protected routes, session-expired handling (401)
 
 ---
 
 ## Quick start (Local)
 
-### Option 1 — One command (Docker Compose)
+### Option 1 — Frontend + Backend (two terminals)
 
-From the folder where `docker-compose.yml` is located:
+**Terminal 1 (Backend):**
+```powershell
+cd C:\workspace\springboot-api
+docker compose up -d --build
+```
 
-~~~bash
-docker compose up --build
-~~~
+Expected:
+- Containers `api` and `postgres` start successfully
+- API at `http://localhost:8081`
 
-Open:
-- Frontend: http://localhost:5173
-- API: http://localhost:8081
+**Terminal 2 (Frontend):**
+```powershell
+cd C:\workspace\task-manager-frontend
+npm install
+npm run dev
+```
 
-To stop:
-
-~~~bash
-docker compose down
-~~~
-
-### Option 2 — Two clicks (Windows)
-
-In this frontend folder:
-
-1. Double click: `start-task-manager.bat`
-2. Open: http://localhost:5173
-
-To stop:
-- Double click: `stop-task-manager.bat`
+Expected:
+- Vite dev server at `http://localhost:5173`
 
 ---
 
 ## Configuration
 
 ### Production API URL
-
 This repo uses `VITE_API_URL` in production.
 
-- `.env.production` (versioned):
+- `.env.production`:
   - `VITE_API_URL=https://task-manager-api-njza.onrender.com`
 
 ### Dev proxy
-
 In development, the frontend calls `/api/...` and Vite proxies to `http://localhost:8081` (removing `/api`).
 
 ---
 
-## What you can do (UI)
+## JWT Flow (How to test in PROD)
 
-- Create tasks with title, description, status, priority, and due date
-- Browse tasks with pagination
-- Search by text using `q` and filter by status/priority
-- Sort by fields (e.g., `id`, `title`, `dueDate`) and change page size
-- Edit tasks (PUT) using form edit mode
-- Delete tasks with confirmation
-- Update status/priority (PATCH) directly from the list
+1) Open the frontend:
+- https://gustavomprado.github.io/task-manager-frontend/
 
----
+2) Login
+- The app should authenticate, store the token, and load tasks.
 
-## 📸 Screenshots (Production)
-
-### List (PROD)
-![PROD List](./screenshots/01-prod-list.png)
-
-### Edit (PROD)
-![PROD Edit](./screenshots/02-prod-edit.png)
-
-### Filters / Pagination (PROD)
-![PROD Filters](./screenshots/03-prod-filters.png)
-
-### Delete Toast (PROD)
-![PROD Delete](./screenshots/04-prod-delete-toast.png)
+3) Validate protected behavior
+- Missing/invalid token → app returns to login.
+- If API returns 401 → token is cleared and you’re redirected to login.
 
 ---
 
-## 📸 Screenshots (Dev)
+## Screenshots
 
-### Home (DEV)
-![Home](./screenshots/home.png)
-
-### Filters / Search (DEV)
-![Filters](./screenshots/filters.png)
-
-### Edit / Patch (DEV)
-![Edit](./screenshots/edit.png)
+You can add screenshots later in `./screenshots/`. Suggested for V2:
+- Login screen
+- List after login
+- Create task success toast
+- Session expired (redirect to login)
 
 ---
 
@@ -129,6 +122,7 @@ In development, the frontend calls `/api/...` and Vite proxies to `http://localh
 
 Gustavo Marinho Prado Alves  
 GitHub: https://github.com/GustavoMPrado
+
 
 
 
