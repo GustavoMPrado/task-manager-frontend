@@ -65,6 +65,16 @@ export type LoginResponse = {
   token: string;
 };
 
+export type AiSuggestPriorityPayload = {
+  title: string;
+  description?: string | null;
+};
+
+export type AiSuggestPriorityResponse = {
+  priority: TaskPriority;
+  reason: string;
+};
+
 const DEFAULT_PROD_API_URL = "https://task-manager-api-njza.onrender.com";
 const DEFAULT_DEV_API_URL = "/api";
 
@@ -178,5 +188,13 @@ export async function getTaskById(id: number): Promise<Task> {
   const res = await api.get(`/tasks/${id}`);
   return res.data as Task;
 }
+
+export async function suggestPriority(
+  payload: AiSuggestPriorityPayload
+): Promise<AiSuggestPriorityResponse> {
+  const res = await api.post("/ai/suggest-priority", payload);
+  return res.data as AiSuggestPriorityResponse;
+}
+
 
 

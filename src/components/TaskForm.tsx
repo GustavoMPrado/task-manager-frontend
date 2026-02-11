@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Task, TaskCreatePayload, TaskPriority, TaskStatus, TaskUpdatePayload } from "../api/taskApi";
+import type {
+  Task,
+  TaskCreatePayload,
+  TaskPriority,
+  TaskStatus,
+  TaskUpdatePayload,
+} from "../api/taskApi";
+import { suggestPriority } from "../api/taskApi";
 
 type TaskFormProps = {
   onCreate: (payload: TaskCreatePayload) => Promise<void> | void;
@@ -28,6 +35,9 @@ export default function TaskForm({
   const [dueDate, setDueDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiReason, setAiReason] = useState<string>("");
+
   const isEditMode = !!editingTask;
   const disabled = submitting || busy;
 
@@ -49,6 +59,7 @@ export default function TaskForm({
     setStatus("TODO");
     setPriority("LOW");
     setDueDate("");
+    setAiReason("");
   }
 
   useEffect(() => {
@@ -62,6 +73,7 @@ export default function TaskForm({
     setStatus(editingTask.status ?? "TODO");
     setPriority(editingTask.priority ?? "LOW");
     setDueDate(editingTask.dueDate ? editingTask.dueDate.slice(0, 10) : "");
+    setAiReason("");
   }, [editingTask]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -104,11 +116,44 @@ export default function TaskForm({
     resetForm();
   }
 
+  async function handleSuggestPriority() {
+    if (disabled || aiBusy) return;
+
+    if (!title.trim() && !description.trim()) {
+      setError?.("Preencha título e/ou descrição para sugerir a prioridade.");
+      return;
+    }
+
+    try {
+      setError?.("");
+      setAiReason("");
+      setAiBusy(true);
+
+      const res = await suggestPriority({
+        title: title.trim(),
+        description: description.trim() || null,
+      });
+
+      setPriority(res.priority);
+      setAiReason(res.reason || "");
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Falha ao sugerir prioridade.";
+      setError?.(String(msg));
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
   return (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="m-0 text-xl font-semibold tracking-tight">
-          {isEditMode && editingTask ? `Editando tarefa #${editingTask.id}` : "Nova tarefa"}
+          {isEditMode && editingTask
+            ? `Editando tarefa #${editingTask.id}`
+            : "Nova tarefa"}
         </h2>
 
         {isEditMode ? (
@@ -122,13 +167,19 @@ export default function TaskForm({
         ) : null}
       </div>
 
-      <form onSubmit={handleSubmit} className={`mt-3 grid gap-3 ${disabled ? "opacity-90" : ""}`}>
+      <form
+        onSubmit={handleSubmit}
+        className={`mt-3 grid gap-3 ${disabled ? "opacity-90" : ""}`}
+      >
         <div className="grid gap-2">
           <label className="text-xs font-medium opacity-90">Título</label>
           <input
             placeholder="Ex: Pagar contas"
             value={title}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTitle(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              setTitle(e.target.value);
+              if (aiReason) setAiReason("");
+            }}
             className={inputClass}
             disabled={disabled}
           />
@@ -139,7 +190,10 @@ export default function TaskForm({
           <textarea
             placeholder="Detalhes (opcional)"
             value={description}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+              setDescription(e.target.value);
+              if (aiReason) setAiReason("");
+            }}
             rows={3}
             className={`${inputClass} resize-y`}
             disabled={disabled}
@@ -151,7 +205,9 @@ export default function TaskForm({
             <label className="text-xs font-medium opacity-90">Status</label>
             <select
               value={status}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatus(e.target.value as TaskStatus)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setStatus(e.target.value as TaskStatus)
+              }
               disabled={disabled}
               className={selectClass}
             >
@@ -164,10 +220,27 @@ export default function TaskForm({
           </div>
 
           <div className="grid gap-2">
-            <label className="text-xs font-medium opacity-90">Prioridade</label>
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-medium opacity-90">
+                Prioridade
+              </label>
+
+              <button
+                type="button"
+                onClick={handleSuggestPriority}
+                disabled={disabled || aiBusy}
+                className="rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-xs font-semibold hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+                title="Usa IA para sugerir a prioridade com base no título/descrição"
+              >
+                {aiBusy ? "Sugerindo..." : "Sugerir prioridade"}
+              </button>
+            </div>
+
             <select
               value={priority}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPriority(e.target.value as TaskPriority)}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setPriority(e.target.value as TaskPriority)
+              }
               disabled={disabled}
               className={selectClass}
             >
@@ -177,6 +250,12 @@ export default function TaskForm({
                 </option>
               ))}
             </select>
+
+            {aiReason ? (
+              <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs leading-relaxed opacity-90">
+                <span className="font-semibold">Motivo:</span> {aiReason}
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-2">
@@ -184,7 +263,9 @@ export default function TaskForm({
             <input
               type="date"
               value={dueDate}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDueDate(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setDueDate(e.target.value)
+              }
               disabled={disabled}
               className={inputClass}
             />
@@ -197,7 +278,13 @@ export default function TaskForm({
             disabled={disabled}
             className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {disabled ? (isEditMode ? "Salvando..." : "Criando...") : isEditMode ? "Salvar alterações" : "Criar tarefa"}
+            {disabled
+              ? isEditMode
+                ? "Salvando..."
+                : "Criando..."
+              : isEditMode
+              ? "Salvar alterações"
+              : "Criar tarefa"}
           </button>
 
           {isEditMode ? (
@@ -215,6 +302,7 @@ export default function TaskForm({
     </>
   );
 }
+
 
 
 
