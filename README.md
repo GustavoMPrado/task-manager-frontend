@@ -1,4 +1,4 @@
-# Task Manager — Full Stack (V2: JWT + Scaling + Observability)
+# Task Manager — Full Stack (V2: JWT + Scaling + Observability + AI)
 
 A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, **pagination**, **filters/search**, a clean **UX**, and **security upgrades** with **JWT**.
 
@@ -20,7 +20,14 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 
 ---
 
-## V2 Highlights (Security + Resilience)
+## V2 Highlights (Security + Resilience + AI)
+
+### AI — Priority suggestion (JWT-protected)
+- Button **"Sugerir prioridade"** in the task form calls `POST /ai/suggest-priority`
+- Payload: `{ title, description }`
+- Response: `{ priority, reason }`
+- The form auto-fills **priority** and displays the **reason**
+- Backend runs in **DEMO mode** (deterministic mock) when `OPENAI_API_KEY` is not set — safe for portfolio demos
 
 ### JWT Auth (Frontend + Backend)
 - Login via `POST /auth/login` returns `{ token }`
@@ -45,6 +52,7 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 - **Inline updates:** PATCH **status** and **priority** directly from the list
 - **UX:** loading overlay, toast feedback, friendly error messages
 - **Security UX:** login screen, protected routes, session-expired handling (401)
+- **AI UX:** one-click priority suggestion with explanation (reason)
 
 ---
 
@@ -107,6 +115,7 @@ In development, the frontend calls `/api/...` and Vite proxies to `http://localh
 ![V2 List](./screenshots/11-v2-list.png)
 ![V2 Create Toast](./screenshots/12-v2-create-toast.png)
 ![V2 Session Expired](./screenshots/13-v2-session-expired.png)
+![V2 AI Suggest Priority (PROD)](./screenshots/2026-02-11_ai-suggest-priority_prod.png)
 
 ---
 
@@ -121,6 +130,7 @@ In development, the frontend calls `/api/...` and Vite proxies to `http://localh
 
 Gustavo Marinho Prado Alves  
 GitHub: https://github.com/GustavoMPrado
+
 
 
 
