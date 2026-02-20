@@ -43,6 +43,11 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 ### Observability
 - Actuator health: `GET /actuator/health` → `UP`
 
+### Security docs / Pentest evidence (Backend)
+- Security summary and controls: `SECURITY.md` (backend repo)
+- Controlled local pentest report (Kali): `docs/PENTEST.md` (backend repo)
+- Pentest evidence files: `docs/pentest-evidencias/` (backend repo)
+
 ---
 
 ## Features
