@@ -16,7 +16,7 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
   - Root status: https://task-manager-api-njza.onrender.com/  
     - Returns: `{"status":"ok","service":"task-manager-api"}`
 
-> **Note:** Render Free may have a **cold start** (~50s) on the first request.
+> **Note:** Render Free may have a **cold start** (~50s) on the first request). The API remains on Render, and the production PostgreSQL database was migrated to **Neon** to avoid Render Free Postgres expiration while keeping the same public API URL.
 
 ---
 
