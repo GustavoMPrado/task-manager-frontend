@@ -1,10 +1,12 @@
 # Task Manager — Full Stack (V2: JWT + Scaling + Observability + AI)
 
-A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, **pagination**, **filters/search**, a clean **UX**, and **security upgrades** with **JWT**.
+This is the frontend of my Task Manager project, which is my main full-stack portfolio project.
+
+I built this version to connect the React frontend to my Spring Boot API with JWT authentication, improve the user experience, and demonstrate a complete flow running in production.
 
 - **Backend:** Java 21 · Spring Boot · PostgreSQL · Flyway · Actuator  
 - **Frontend:** React · Vite · TypeScript · Tailwind CSS  
-- **Production:** Render (API) + GitHub Pages (Frontend)
+- **Production(current setup):** Render (API) + GitHub Pages (Frontend)
 
 ---
 
@@ -16,24 +18,25 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
   - Root status: https://task-manager-api-njza.onrender.com/  
     - Returns: `{"status":"ok","service":"task-manager-api"}`
 
-> **Note:** Render Free may have a **cold start** (~50s) on the first request). The API remains on Render, and the production PostgreSQL database was migrated to **Neon** to avoid Render Free Postgres expiration while keeping the same public API URL.
+> **Note (Render free tier)**: If the API stays idle for some time, the first request may take longer **(cold start, usually around 30s to 60s)**. The API stays on Render, and the production PostgreSQL database was migrated to **Neon** to avoid Render Free Postgres expiration while keeping the same public API URL.
 
 ---
 
 ## V2 Highlights (Security + Resilience + AI)
+In V2, I focused on making the frontend work better with the secured backend (JWT), improving resilience/UX, and adding the AI priority suggestion flow.
 
 ### AI — Priority suggestion (JWT-protected)
 - Button **"Sugerir prioridade"** in the task form calls `POST /ai/suggest-priority`
 - Payload: `{ title, description }`
 - Response: `{ priority, reason }`
 - The form auto-fills **priority** and displays the **reason**
-- Backend runs in **DEMO mode** (deterministic mock) when `OPENAI_API_KEY` is not set — safe for portfolio demos
+- I kept the backend AI endpoint usable in demo mode (deterministic mock) when \OPENAI_API_KEY` is not set, so the feature still works in portfolio demos`
 
 ### JWT Auth (Frontend + Backend)
 - Login via `POST /auth/login` returns `{ token }`
-- Frontend stores token in `localStorage` key: `task_manager_token`
+- The frontend stores the token in localStorage (key: \task_manager_token`)`
 - Requests to `/tasks/**` use `Authorization: Bearer <token>`
-- If API returns **401**, the frontend clears token and returns to login (session expired)
+- If the API returns **401**, the frontend clears the token and redirects back to login (session expired)
 
 ### Resilience / Scaling
 - **Login rate limit**: after **5 attempts/minute/IP**, `/auth/login` returns **429**
@@ -41,7 +44,7 @@ A full-stack **Task Manager** portfolio project showcasing real-world **CRUD**, 
 - **Flyway migrations**: schema versioned (includes `V2__add_indexes_timestamps.sql`)
 
 ### Observability
-- Actuator health: `GET /actuator/health` → `UP`
+- The frontend depends on the backend health endpoint ( + crase + GET /actuator/health + crase + ) for production checks, and it should return + crase + UP + crase + ``
 
 ### Security docs / Pentest evidence (Backend)
 - Security summary and controls: `SECURITY.md` (backend repo)
@@ -71,7 +74,7 @@ cd C:\workspace\springboot-api
 docker compose up -d --build
 ```
 
-Expected:
+Expected result:
 - Containers `api` and `postgres` start successfully
 - API at `http://localhost:8081`
 
@@ -82,7 +85,7 @@ npm install
 npm run dev
 ```
 
-Expected:
+Expected result:
 - Vite dev server at `http://localhost:5173`
 
 ---
@@ -90,27 +93,27 @@ Expected:
 ## Configuration
 
 ### Production API URL
-This repo uses `VITE_API_URL` in production.
+In production, this frontend uses \VITE_API_URL` to call the backend API.`
 
 - `.env.production`:
   - `VITE_API_URL=https://task-manager-api-njza.onrender.com`
 
 ### Dev proxy
-In development, the frontend calls `/api/...` and Vite proxies to `http://localhost:8081` (removing `/api`).
+In development, the frontend calls `/api/...` and Vite proxies it to `http://localhost:8081` (and strips the `/api` prefix).
 
 ---
 
-## JWT Flow (How to test in PROD)
+## JWT Flow (How I test it in production)
 
 1) Open the frontend:
 - https://gustavomprado.github.io/task-manager-frontend/
 
 2) Login
-- The app should authenticate, store the token, and load tasks.
+- The app should authenticate, store the token, and load the task list.
 
 3) Validate protected behavior
-- Missing/invalid token → app returns to login.
-- If API returns 401 → token is cleared and you’re redirected to login.
+- Missing or invalid token → the app returns to login
+- If the API returns 401, the token is cleared and the app redirects back to login.
 
 ---
 
@@ -135,6 +138,7 @@ In development, the frontend calls `/api/...` and Vite proxies to `http://localh
 
 Gustavo Marinho Prado Alves  
 GitHub: https://github.com/GustavoMPrado
+Email: gmarinhoprado@gmail.com
 
 
 
